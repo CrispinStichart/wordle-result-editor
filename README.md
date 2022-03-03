@@ -1,0 +1,3 @@
+# Wordle Results Editor
+
+Ever wanted to easily memeify your wordle results? No? Oh... well... you can now...
