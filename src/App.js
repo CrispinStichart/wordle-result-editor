@@ -1,4 +1,5 @@
 import React from "react";
+import "./App.css";
 
 class WordleResults extends React.Component {
   constructor(props) {
@@ -10,26 +11,32 @@ class WordleResults extends React.Component {
     };
 
     this.state = {
-      disabled: false,
+      textviewHidden: true,
       results: [],
+      pastedContent: "",
     };
+
+    this.textAreaRef = React.createRef();
 
     this.handleChange = this.handleChange.bind(this);
   }
 
   handleChange(event) {
-    // this.setState({ disabled: true });
-  }
-
-  enableEditing() {
-    this.setState({ disabled: false });
+    this.parseWordleResults(event.target.value);
+    this.setState({ pastedContent: "", textviewHidden: true });
   }
 
   parseWordleResults(results) {
-    const regexp = /[🟩🟨⬜]/gu;
+    // The squares don't all render properly in my editor, but they
+    // are, from left to right: green, yellow, white, grey.
+    const regexp = /[🟩🟨⬜⬛]/gu;
     let array = [...results.matchAll(regexp)];
 
-    array = array.map((item) => item[0]);
+    // extract the actual emoji from the match object, and then transform
+    // white squares (used in dark mode) to white squares.
+    array = array.map((item) => {
+      return item[0] === "⬛" ? "⬜" : item[0];
+    });
     let lines = [];
     for (let i = 0; i < array.length; i += 5) {
       lines.push(array.slice(i, i + 5));
@@ -44,49 +51,71 @@ class WordleResults extends React.Component {
       .then((clipText) => this.parseWordleResults(clipText));
   }
 
-  render() {
-    const rm = {
-      "⬜": "white",
-      "🟨": "yellow",
-      "🟩": "green",
-    };
+  convertResults() {
+    return this.state.results
+      .map((line) => {
+        let l = line.map((emoji) => {
+          return this.props.replacements[this.emoji_name[emoji]];
+        });
 
+        return l.join("");
+      })
+      .join("\n");
+  }
+
+  copyToClipboard() {
+    navigator.clipboard
+      .writeText(this.convertResults())
+      .then(() => alert("Copied results to clipboard"));
+  }
+
+  // The focus needs to be set after the component is rendered.
+  openTextView() {
+    this.setState({ textviewHidden: false });
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    this.textAreaRef.current.focus();
+  }
+
+  render() {
     return (
       <div>
+        <a href="#" onClick={() => this.openTextView()}>
+          Paste as plain text instead. For people running that browser for
+          furries.
+        </a>
+        <br />
+
         <button onClick={() => this.readClipboard()}>Paste Wordle</button>
-        <div className="results">
-          {this.state.results.map((line, l_num) => (
-            <div key={"results-line-" + l_num} className="results-line">
-              {line.map((emoji, e_num) => {
-                console.log(this.props.emoji_values);
-                return (
-                  <Token
-                    key={"token-" + l_num * 5 + e_num}
-                    className={this.emoji_name[emoji]}
-                    value={this.props.emoji_values[rm[emoji]]}
-                  />
-                );
-              })}
-            </div>
-          ))}
+        <button
+          disabled={this.state.results.length === 0}
+          onClick={() => this.copyToClipboard()}
+        >
+          Copy Results
+        </button>
+
+        <div className="textarea">
+          <textarea
+            hidden={this.state.textviewHidden}
+            ref={this.textAreaRef}
+            onChange={this.handleChange}
+            value={this.state.pastedContent}
+          />
         </div>
+
+        <div className="results">{this.convertResults()}</div>
       </div>
     );
   }
 }
 
-function Token(props) {
-  return <span className={props.className}>{props.value}</span>;
-}
-
+// This is the editable text field for specifying a replacement.
+// A value of nothing should translate into showing the defaults
+// in the WordleResults component
 class Replacement extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      default: props.name,
-      value: "",
-    };
-
     this.handleChange = this.handleChange.bind(this);
   }
 
@@ -100,9 +129,85 @@ class Replacement extends React.Component {
     return (
       <input
         type="text"
-        value={this.state.value}
+        value={
+          this.props.value === this.props.default_emoji ? "" : this.props.value
+        }
         onChange={this.handleChange}
       />
+    );
+  }
+}
+
+class SavedCombinations extends React.Component {
+  constructor(props) {
+    super(props);
+
+    // Grab the stringified list from local storage. Will be null if
+    // it was never set.
+    let savedCombos = localStorage.getItem("savedCombinations");
+    if (savedCombos !== null) {
+      savedCombos = JSON.parse(savedCombos);
+    }
+
+    this.state = {
+      savedCombinations: savedCombos ?? [],
+    };
+
+    this.saveCombination = this.saveCombination.bind(this);
+  }
+
+  saveCombination() {
+    let replacements = this.props.replacements();
+    let savedCombos = this.state.savedCombinations.slice();
+    savedCombos.push(replacements);
+    this.setState({ savedCombinations: savedCombos });
+    localStorage.setItem("savedCombinations", JSON.stringify(savedCombos));
+  }
+
+  deleteCombination(id) {
+    console.log(id === 0 ? 1 : id);
+    let savedCombos = this.state.savedCombinations.slice();
+    let filtered = savedCombos.slice(0, id);
+    console.log(filtered);
+    console.log(savedCombos);
+
+    console.log(savedCombos.slice(id + 1));
+    filtered.push(...savedCombos.slice(id + 1));
+    console.log(filtered);
+
+    this.setState({ savedCombinations: filtered });
+    localStorage.setItem("savedCombinations", JSON.stringify(filtered));
+  }
+
+  replacementToString(replacement) {
+    return Object.entries(replacement)
+      .map(([color, replacement_str]) => {
+        return color + " = " + replacement_str;
+      })
+      .join(", ");
+  }
+
+  render() {
+    return (
+      <div className="saved-combinations">
+        <button onClick={this.saveCombination}>Save Emoji Combination</button>
+
+        <div className="combination-list">
+          {this.state.savedCombinations.map((combo, num) => {
+            let comboStr = this.replacementToString(combo);
+            return (
+              <div className="combo-container" key={comboStr}>
+                <button onClick={() => this.props.setReplacement(combo)}>
+                  {comboStr}
+                </button>
+                <button onClick={() => this.deleteCombination(num)}>
+                  Delete
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     );
   }
 }
@@ -110,65 +215,63 @@ class Replacement extends React.Component {
 class App extends React.Component {
   constructor(props) {
     super(props);
+    // The emojis may not all render properly in an editor, but they'll still work.
     this.defaults = {
       white: "⬜",
       yellow: "🟨",
       green: "🟩",
     };
 
+    // used when selecting random emojis, will try to pick true random emojis later.
     this.popular_emojis = ["🤣", "👍", "😭", "🙏", "😘", "🥰", "😍", "😊"];
 
-    this.defaults_inverted = {
-      "⬜": "white",
-      "🟨": "yellow",
-      "🟩": "green",
-    };
-
     this.state = {
-      emoji_values: { ...this.defaults },
+      replacements: { ...this.defaults },
     };
   }
 
+  // <Replacement> will call this when a replacement is typed
   updateReplacement(original, replacement) {
-    console.log(original);
-    console.log(replacement);
     let replacements = {
-      ...this.state.emoji_values,
+      ...this.state.replacements,
     };
     replacements[original] =
       replacement === "" ? this.defaults[original] : replacement;
-    console.log(replacements);
-    this.setState({ emoji_values: replacements });
+    this.setState({ replacements: replacements });
   }
 
   random_emoji() {
     const emojis = getRandom(this.popular_emojis, 3);
     let replacements = {
-      ...this.state.emoji_values,
+      ...this.state.replacements,
     };
     for (const key in replacements) {
       replacements[key] = emojis.pop();
     }
 
-    console.log("did something");
-    this.setState({ emoji_values: replacements });
+    this.setState({ replacements: replacements });
+  }
+
+  get_replacements() {
+    return this.state.replacements;
   }
 
   render() {
-    const options = ["white", "yellow", "green"];
     return (
       <div>
-        <WordleResults emoji_values={this.state.emoji_values} />
+        <WordleResults replacements={this.state.replacements} />
         <div>
           <ul>
-            {options.map((option) => {
+            {Object.keys(this.defaults).map((color) => {
               return (
-                <li key={option}>
-                  {this.defaults[option]}{" "}
+                <li key={color}>
+                  {this.defaults[color]}{" "}
                   <Replacement
                     editCallback={(o, r) => this.updateReplacement(o, r)}
-                    name={option}
-                    // value={this.state.emoji_values[option]}
+                    name={color}
+                    default_emoji={this.defaults[color]}
+                    replacement={this.state.replacements[color]}
+                    value={this.state.replacements[color]}
                   />
                 </li>
               );
@@ -176,6 +279,12 @@ class App extends React.Component {
           </ul>
         </div>
         <button onClick={() => this.random_emoji()}>Randomize</button>
+        <SavedCombinations
+          replacements={() => this.get_replacements()}
+          setReplacement={(replacement) =>
+            this.setState({ replacements: replacement })
+          }
+        />
       </div>
     );
   }
@@ -196,3 +305,14 @@ function getRandom(arr, n) {
   }
   return result;
 }
+
+// TODO LIST
+// Work with dark mode -- different emojis. DONE
+//
+// Alternative copy and paste method when clipboard API not supported. (Like in Firefox) DONE
+//
+// Get the randomizer to fill in the replacement fields. DONE!
+//
+// Let users save combinations.  DONE
+//
+// save the text preamble
