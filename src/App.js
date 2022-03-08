@@ -81,10 +81,10 @@ class WordleResults extends React.Component {
   render() {
     return (
       <div>
-        <a href="#" onClick={() => this.openTextView()}>
+        <button onClick={() => this.openTextView()}>
           Paste as plain text instead. For people running that browser for
           furries.
-        </a>
+        </button>
         <br />
 
         <button onClick={() => this.readClipboard()}>Paste Wordle</button>
