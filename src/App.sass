@@ -1,0 +1,19 @@
+.results
+    word-wrap: break-word /* IE 5.5-7 */
+    white-space: pre-wrap /* Modern browsers */
+
+.saved-combos-animation-enter
+    opacity: 0.01
+
+.saved-combos-animation-enter-active
+    opacity: 1
+    transition: opacity 500ms ease-in
+
+.saved-combos-animation-exit
+    opacity: 1
+    max-height: 20px /* Not sure about hard-coding this. Is there a better way? */
+
+.saved-combos-animation-exit-active
+    opacity: 0.0
+    max-height: 0
+    transition: all 300ms ease-in

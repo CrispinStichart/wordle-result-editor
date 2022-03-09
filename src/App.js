@@ -1,5 +1,6 @@
 import React from "react";
 import "./App.css";
+import { TransitionGroup, CSSTransition } from "react-transition-group"; // ES6
 
 class WordleResults extends React.Component {
   constructor(props) {
@@ -165,15 +166,10 @@ class SavedCombinations extends React.Component {
   }
 
   deleteCombination(id) {
-    console.log(id === 0 ? 1 : id);
     let savedCombos = this.state.savedCombinations.slice();
     let filtered = savedCombos.slice(0, id);
-    console.log(filtered);
-    console.log(savedCombos);
 
-    console.log(savedCombos.slice(id + 1));
     filtered.push(...savedCombos.slice(id + 1));
-    console.log(filtered);
 
     this.setState({ savedCombinations: filtered });
     localStorage.setItem("savedCombinations", JSON.stringify(filtered));
@@ -193,19 +189,30 @@ class SavedCombinations extends React.Component {
         <button onClick={this.saveCombination}>Save Emoji Combination</button>
 
         <div className="combination-list">
-          {this.state.savedCombinations.map((combo, num) => {
-            let comboStr = this.replacementToString(combo);
-            return (
-              <div className="combo-container" key={comboStr}>
-                <button onClick={() => this.props.setReplacement(combo)}>
-                  {comboStr}
-                </button>
-                <button onClick={() => this.deleteCombination(num)}>
-                  Delete
-                </button>
-              </div>
-            );
-          })}
+          <TransitionGroup>
+            {this.state.savedCombinations.map((combo, num) => {
+              let comboStr = this.replacementToString(combo);
+              const nodeRef = React.createRef();
+
+              return (
+                <CSSTransition
+                  nodeRef={nodeRef}
+                  key={comboStr}
+                  classNames="saved-combos-animation"
+                  timeout={{ enter: 500, exit: 300 }}
+                >
+                  <div className="combo-container" ref={nodeRef}>
+                    <button onClick={() => this.props.setReplacement(combo)}>
+                      {comboStr}
+                    </button>
+                    <button onClick={() => this.deleteCombination(num)}>
+                      Delete
+                    </button>
+                  </div>
+                </CSSTransition>
+              );
+            })}
+          </TransitionGroup>
         </div>
       </div>
     );
@@ -316,3 +323,9 @@ function getRandom(arr, n) {
 // Let users save combinations.  DONE
 //
 // save the text preamble
+//
+
+// FIXME:
+// For some reason, sometimes clicking delete on saved combos doesn't do anything.
+// Possibly an issue with keys?
+//
