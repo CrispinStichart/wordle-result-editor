@@ -36,13 +36,12 @@ jobs:
 
     steps:
       - uses: actions/download-artifact@v3
-        with:
-          name: build
-
-      - run: ls -r
-      - run: git clone https://github.com/CrispinStichart/wordle-result-editor-website.git repo
-      - run: mv -f build/* repo/
-      - run: cd repo
-      - run: git add -A
-      - run: git commit -m "Automatic commit"
-      - run: git push
+      - run: |
+          git clone https://CrispinStichart:${{ ACCESS_TOKEN }}@github.com/CrispinStichart/wordle-result-editor-website.git repo
+          cd repo
+          rm -rf *
+          touch .nojekyll
+          mv -f ../build/* .
+          git add -A
+          git commit -m "Automatic commit"
+          git push
