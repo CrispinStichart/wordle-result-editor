@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
       - run: |
-          git clone https://CrispinStichart:${{ ACCESS_TOKEN }}@github.com/CrispinStichart/wordle-result-editor-website.git repo
+          git clone https://CrispinStichart:${{ secrets.ACCESS_TOKEN }}@github.com/CrispinStichart/wordle-result-editor-website.git repo
           cd repo
           rm -rf *
           touch .nojekyll
