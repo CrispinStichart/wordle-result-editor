@@ -34,13 +34,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: build
+
       - name: clone the repo
       - run: git clone https://github.com/CrispinStichart/wordle-result-editor-website.git repo
 
       - name: Push to deploment repo
-        uses: actions/download-artifact@v3
-        with:
-          name: build
       - run: mv -f build/* repo/
       - run: cd repo
       - run: git add -A
