@@ -38,6 +38,8 @@ jobs:
       - uses: actions/download-artifact@v3
       - run: |
           git clone https://CrispinStichart:${{ secrets.ACCESS_TOKEN }}@github.com/CrispinStichart/wordle-result-editor-website.git repo
+          git config --global user.email "me@yourmom.xxx"
+          git config --global user.name "Mr. Robot"
           cd repo
           rm -rf *
           touch .nojekyll
