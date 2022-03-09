@@ -39,6 +39,7 @@ jobs:
         with:
           name: build
 
+      - run: ls -r
       - run: git clone https://github.com/CrispinStichart/wordle-result-editor-website.git repo
       - run: mv -f build/* repo/
       - run: cd repo
