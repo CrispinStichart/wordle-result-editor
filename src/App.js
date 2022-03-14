@@ -1,6 +1,8 @@
 import React from "react";
 import "./App.css";
 import { TransitionGroup, CSSTransition } from "react-transition-group"; // ES6
+import Toastify from "toastify-js";
+import "toastify-js/src/toastify.css";
 
 class WordleResults extends React.Component {
   constructor(props) {
@@ -15,6 +17,7 @@ class WordleResults extends React.Component {
       textviewHidden: true,
       results: [],
       pastedContent: "",
+      date: null,
     };
 
     this.textAreaRef = React.createRef();
@@ -28,6 +31,9 @@ class WordleResults extends React.Component {
   }
 
   parseWordleResults(results) {
+    const dateregex = /Wordle \d+ \d+\/\d+/g;
+    const date = results.match(dateregex)?.at(0);
+
     // The squares don't all render properly in my editor, but they
     // are, from left to right: green, yellow, white, grey.
     const regexp = /[🟩🟨⬜⬛]/gu;
@@ -43,7 +49,7 @@ class WordleResults extends React.Component {
       lines.push(array.slice(i, i + 5));
     }
 
-    this.setState({ results: lines });
+    this.setState({ results: lines, date: date, textviewHidden: true });
   }
 
   readClipboard() {
@@ -53,21 +59,34 @@ class WordleResults extends React.Component {
   }
 
   convertResults() {
-    return this.state.results
-      .map((line) => {
-        let l = line.map((emoji) => {
-          return this.props.replacements[this.emoji_name[emoji]];
-        });
+    let date = this.state.date;
+    if (date) {
+      date = date + "\n\n";
+    }
 
-        return l.join("");
-      })
-      .join("\n");
+    return (
+      (date ?? "") +
+      this.state.results
+        .map((line) => {
+          let l = line.map((emoji) => {
+            return this.props.replacements[this.emoji_name[emoji]];
+          });
+
+          return l.join("");
+        })
+        .join("\n")
+    );
   }
 
   copyToClipboard() {
-    navigator.clipboard
-      .writeText(this.convertResults())
-      .then(() => alert("Copied results to clipboard"));
+    navigator.clipboard.writeText(this.convertResults()).then(() => {
+      Toastify({
+        text: "Copied to Clipboard",
+        duration: 1500,
+        position: "center",
+        stopOnFocus: true,
+      }).showToast();
+    });
   }
 
   // The focus needs to be set after the component is rendered.
@@ -82,27 +101,27 @@ class WordleResults extends React.Component {
   render() {
     return (
       <div>
-        <button onClick={() => this.openTextView()}>
-          Paste as plain text instead. For people running that browser for
-          furries.
-        </button>
-        <br />
-
         <button onClick={() => this.readClipboard()}>Paste Wordle</button>
+        <br />
+        <button onClick={() => this.openTextView()}>Paste as plain text</button>
+
         <button
           disabled={this.state.results.length === 0}
           onClick={() => this.copyToClipboard()}
+          className="float-right"
         >
           Copy Results
         </button>
 
         <div className="textarea">
-          <textarea
-            hidden={this.state.textviewHidden}
-            ref={this.textAreaRef}
-            onChange={this.handleChange}
-            value={this.state.pastedContent}
-          />
+          <form>
+            <textarea
+              hidden={this.state.textviewHidden}
+              ref={this.textAreaRef}
+              onChange={this.handleChange}
+              value={this.state.pastedContent}
+            />
+          </form>
         </div>
 
         <div className="results">{this.convertResults()}</div>
@@ -199,7 +218,7 @@ class SavedCombinations extends React.Component {
                   nodeRef={nodeRef}
                   key={comboStr}
                   classNames="saved-combos-animation"
-                  timeout={{ enter: 500, exit: 300 }}
+                  timeout={{ enter: 300, exit: 100 }}
                 >
                   <div className="combo-container" ref={nodeRef}>
                     <button onClick={() => this.props.setReplacement(combo)}>
@@ -229,7 +248,7 @@ class App extends React.Component {
       green: "🟩",
     };
 
-    // used when selecting random emojis, will try to pick true random emojis later.
+    // Used when selecting random emojis. I chose these because they are, allegedly, the most popular.
     this.popular_emojis = ["🤣", "👍", "😭", "🙏", "😘", "🥰", "😍", "😊"];
 
     this.state = {
@@ -265,7 +284,7 @@ class App extends React.Component {
 
   render() {
     return (
-      <div>
+      <div className="app">
         <WordleResults replacements={this.state.replacements} />
         <div>
           <ul>
@@ -296,6 +315,7 @@ class App extends React.Component {
     );
   }
 }
+
 export default App;
 
 // https://stackoverflow.com/questions/19269545/how-to-get-a-number-of-random-elements-from-an-array
@@ -322,7 +342,7 @@ function getRandom(arr, n) {
 //
 // Let users save combinations.  DONE
 //
-// save the text preamble
+// save the text preamble DONE!
 //
 
 // FIXME:
