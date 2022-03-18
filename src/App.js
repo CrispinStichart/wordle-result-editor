@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./App.css";
 import { TransitionGroup, CSSTransition } from "react-transition-group"; // ES6
 import Toastify from "toastify-js";
