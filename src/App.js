@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import { TransitionGroup, CSSTransition } from "react-transition-group"; // ES6
 import Toastify from "toastify-js";
@@ -173,6 +173,9 @@ class SavedCombinations extends React.Component {
       savedCombinations: savedCombos ?? [],
     };
 
+    // for mapping color name back to the square emoji
+    this.originalEmojis = props.originalEmojis;
+
     this.saveCombination = this.saveCombination.bind(this);
   }
 
@@ -197,15 +200,15 @@ class SavedCombinations extends React.Component {
   replacementToString(replacement) {
     return Object.entries(replacement)
       .map(([color, replacement_str]) => {
-        return color + " = " + replacement_str;
+        return this.originalEmojis[color] + " 🡲 " + replacement_str;
       })
-      .join(", ");
+      .join(" | ");
   }
 
   render() {
     return (
       <div className="saved-combinations">
-        <button onClick={this.saveCombination}>Save Emoji Combination</button>
+        <button onClick={this.saveCombination}>💾 Save Combination</button>
 
         <div className="combination-list">
           <TransitionGroup>
@@ -221,11 +224,14 @@ class SavedCombinations extends React.Component {
                   timeout={{ enter: 300, exit: 100 }}
                 >
                   <div className="combo-container" ref={nodeRef}>
-                    <button onClick={() => this.props.setReplacement(combo)}>
+                    <button
+                      className="set-combo"
+                      onClick={() => this.props.setReplacement(combo)}
+                    >
                       {comboStr}
                     </button>
                     <button onClick={() => this.deleteCombination(num)}>
-                      Delete
+                      ❌
                     </button>
                   </div>
                 </CSSTransition>
@@ -287,29 +293,32 @@ class App extends React.Component {
       <div className="app">
         <WordleResults replacements={this.state.replacements} />
         <div>
-          <ul>
-            {Object.keys(this.defaults).map((color) => {
-              return (
-                <li key={color}>
-                  {this.defaults[color]}{" "}
-                  <Replacement
-                    editCallback={(o, r) => this.updateReplacement(o, r)}
-                    name={color}
-                    default_emoji={this.defaults[color]}
-                    replacement={this.state.replacements[color]}
-                    value={this.state.replacements[color]}
-                  />
-                </li>
-              );
-            })}
-          </ul>
+          <div>
+            <ul>
+              {Object.keys(this.defaults).map((color) => {
+                return (
+                  <li key={color}>
+                    {this.defaults[color]}{" "}
+                    <Replacement
+                      editCallback={(o, r) => this.updateReplacement(o, r)}
+                      name={color}
+                      default_emoji={this.defaults[color]}
+                      replacement={this.state.replacements[color]}
+                      value={this.state.replacements[color]}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <button onClick={() => this.random_emoji()}>Randomize</button>
         </div>
-        <button onClick={() => this.random_emoji()}>Randomize</button>
         <SavedCombinations
           replacements={() => this.get_replacements()}
           setReplacement={(replacement) =>
             this.setState({ replacements: replacement })
           }
+          originalEmojis={this.defaults}
         />
       </div>
     );
@@ -318,8 +327,14 @@ class App extends React.Component {
 
 export default App;
 
-// https://stackoverflow.com/questions/19269545/how-to-get-a-number-of-random-elements-from-an-array
+/**
+ * @template T
+ * @param {T[]} arr
+ * @param {number} n
+ * @returns {T[]}
+ */
 function getRandom(arr, n) {
+  // https://stackoverflow.com/questions/19269545/how-to-get-a-number-of-random-elements-from-an-array
   let result = new Array(n),
     len = arr.length,
     taken = new Array(len);
@@ -332,20 +347,3 @@ function getRandom(arr, n) {
   }
   return result;
 }
-
-// TODO LIST
-// Work with dark mode -- different emojis. DONE
-//
-// Alternative copy and paste method when clipboard API not supported. (Like in Firefox) DONE
-//
-// Get the randomizer to fill in the replacement fields. DONE!
-//
-// Let users save combinations.  DONE
-//
-// save the text preamble DONE!
-//
-
-// FIXME:
-// For some reason, sometimes clicking delete on saved combos doesn't do anything.
-// Possibly an issue with keys?
-//
